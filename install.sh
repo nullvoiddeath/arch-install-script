@@ -1,28 +1,32 @@
 read -p 'Enter Hostname: ' hostvar
 read -p 'Enter your Username: ' uservar
+read -p 'Enter user password: ' userpass
+read -p 'Enter root password: ' root_password
+read -p 'Enter root partition size: ' rootsize
+read -p 'Enter swap size (ideally half of RAM size): ' swapsize
 timedatectl set-ntp true
 dhcpcd
 echo "nameserver 8.8.8.8 > /etc/resolv.conf"
 echo "nameserver 8.8.4.4 >> /etc/resolv.conf"
 #iwctl --passphrase passphrase station device connect SSID
 lsblk
-
+read -p 'Enter device to install Arch on: ' sdavar
 #disk partitioning
 sgdisk -oG /dev/sda
-sgdisk -n 0:0:+512MiB -t 0:ef00 -c 0:"EFI" /dev/sda
-sgdisk -n 0:0:+4GiB -t 0:8300 -c 0:"root" /dev/sda
-sgdisk -n 0:0:+1GiB -t 0:8200 -c 0:"swap" /dev/sda
-sgdisk -n 0:0:0 -t 0:8300 -c 0:"home" /dev/sda
-mkfs.fat -F32 -n BOOT /dev/sda1
-mkfs.ext4 /dev/sda2
-mkfs.ext4 /dev/sda4
-mkswap -L swap /dev/sda3
-swapon /dev/sda3
-mount /dev/sda2 /mnt
+sgdisk -n 0:0:+512MiB -t 0:ef00 -c 0:"EFI" /dev/$sdavar
+sgdisk -n 0:0:+{rootsize}GiB -t 0:8300 -c 0:"root" /dev/$sdavar
+sgdisk -n 0:0:+{swapsize}GiB -t 0:8200 -c 0:"swap" /dev/$sdavar
+sgdisk -n 0:0:0 -t 0:8300 -c 0:"home" /dev/$sdavar
+mkfs.fat -F32 -n BOOT /dev/${sdavar}1
+mkfs.ext4 /dev/${sdavar}2
+mkfs.ext4 /dev/${sdavar}4
+mkswap -L swap /dev/${sdavar}3
+swapon /dev/${sdavar}3
+mount /dev/${sdavar}2 /mnt
 mkdir -p /mnt/home
-mount /dev/sda4 /mnt/home
+mount /dev/${sdavar}4 /mnt/home
 mkdir -p /mnt/boot/efi
-mount /dev/sda1 /mnt/boot/efi
+mount /dev/${sdavar}1 /mnt/boot/efi
 
 #installing
 pacstrap /mnt base base-devel linux linux-firmware
@@ -43,17 +47,18 @@ mkinitcpio -p linux
 pacman -S alsa alsa-utils wireless_tools wpa_supplicant dialog networkmanager dhcpcd --noconfirm
 
 #boot manager
-pacman -S grub efibootmgr
+pacman -S grub efibootmgr --noconfirm
 grub-install /dev/sda
 grub-mkconfig -o /boot/grub/grub.cfg
-passwd
+echo "root:${root_password}" | chpasswd
 
 pacman -S xorg-server xf86-video-vesa sudo --noconfirm
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 useradd -m -g users -G wheel $uservar
-passwd $uservar
+echo "${uservar}:${userpass}" | chpasswd
 exit
 EOF
 
 umount -R /mnt
 reboot
+
