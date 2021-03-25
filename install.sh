@@ -14,8 +14,8 @@ read -p 'Enter device to install Arch on: ' sdavar
 #disk partitioning
 sgdisk -oG /dev/sda
 sgdisk -n 0:0:+512MiB -t 0:ef00 -c 0:"EFI" /dev/$sdavar
-sgdisk -n 0:0:+{rootsize}GiB -t 0:8300 -c 0:"root" /dev/$sdavar
-sgdisk -n 0:0:+{swapsize}GiB -t 0:8200 -c 0:"swap" /dev/$sdavar
+sgdisk -n 0:0:+${rootsize}GiB -t 0:8300 -c 0:"root" /dev/$sdavar
+sgdisk -n 0:0:+${swapsize}GiB -t 0:8200 -c 0:"swap" /dev/$sdavar
 sgdisk -n 0:0:0 -t 0:8300 -c 0:"home" /dev/$sdavar
 mkfs.fat -F32 -n BOOT /dev/${sdavar}1
 mkfs.ext4 /dev/${sdavar}2
